@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#203e35"><meta name="description" content="Маленький пиксельный мир вокруг НГТУ. Интерактивная карта с четырьмя персонажами.">
+<title>REKORD — после пар</title>
+<link rel="stylesheet" href="fonts/pixel.css"><link rel="stylesheet" href="fonts/golos.css"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="header">
+ <a class="brand" href="./" aria-label="REKORD, главная"><span class="brand-icon"><i></i><i></i><i></i><i></i></span>REKORD<span class="brand-divider"></span><span class="brand-caption">маленький мир<br>больших историй</span></a>
+ <div class="header-right"><span class="version">КАРТА КАМПУСА <b>v.01</b></span><button class="icon-btn info-btn" id="info" aria-label="О карте">i</button></div>
+</header>
+<main>
+ <section class="intro"><div><div class="eyebrow"><span></span>НОВОСИБИРСК / НГТУ НЭТИ</div><h1>Встретимся <span>после пар.</span><span class="title-spark">✳</span></h1><p>Знакомые места. Четверо друзей. Одна маленькая прогулка.</p></div><div class="intro-note"><span class="pixel-star">✦</span><div>Твоя история<br>начинается здесь.</div><span class="note-arrow">↙</span></div></section>
+ <section class="explorer" aria-label="Интерактивная карта района НГТУ">
+  <aside class="sidebar">
+   <div class="sidebar-heading"><span>КУДА ПОЙДЁМ?</span><span class="tiny-square"></span></div>
+   <div class="places" role="group" aria-label="Места на карте">
+    <button class="place active" data-place="campus" aria-pressed="true"><span class="place-icon campus-icon">Н</span><span class="place-text"><small>ТОЧКА СБОРА</small><strong>НГТУ НЭТИ</strong><span>Первый корпус</span></span><span class="place-arrow">↗</span></button>
+    <button class="place" data-place="burger" aria-pressed="false"><span class="place-icon burger-icon"><i class="burger-bun"></i><i class="burger-lettuce"></i><i class="burger-meat"></i><i class="burger-bottom"></i></span><span class="place-text"><small>ЗАЙТИ ЗА БУРГЕРОМ</small><strong>Burger King</strong><span>Через Геодезическую</span></span><span class="place-arrow">↗</span></button>
+    <button class="place" data-place="tea" aria-pressed="false"><span class="place-icon tea-icon"><i class="tea-straw"></i><i class="tea-cup">•••</i></span><span class="place-text"><small>ИЛИ ВЫПИТЬ ЧАЮ</small><strong>Молочай <em>−1</em></strong><span>ТЦ «Амстердам»</span></span><span class="place-arrow">↗</span></button>
+   </div>
+   <div class="walkers-section"><div class="sidebar-heading"><span>НАША КОМПАНИЯ</span><span class="count">04</span></div><div class="walker-list" aria-label="Четыре персонажа"><button data-person="0" class="walker" aria-label="Выбрать первого персонажа"><canvas width="24" height="32"></canvas><span>01</span></button><button data-person="1" class="walker" aria-label="Выбрать второго персонажа"><canvas width="24" height="32"></canvas><span>02</span></button><button data-person="2" class="walker" aria-label="Выбрать третьего персонажа"><canvas width="24" height="32"></canvas><span>03</span></button><button data-person="3" class="walker" aria-label="Выбрать четвёртого персонажа"><canvas width="24" height="32"></canvas><span>04</span></button></div><p class="walkers-note">Все четверо уже на карте</p></div>
+   <div class="sidebar-bottom"><div class="route-setting"><span><i class="route-symbol"></i>Показать маршрут</span><button class="toggle on" id="routeToggle" role="switch" aria-checked="true" aria-label="Показать маршрут"><span></span></button></div><button class="walk-button" id="walkButton"><span class="play-symbol">▶</span><span>На прогулку</span><span class="button-arrow">↗</span></button><div class="walk-status" id="walkStatus" role="status">Выбери место и отправляйся в путь</div></div>
+  </aside>
+  <div class="map-area" id="mapArea">
+   <canvas id="map" tabindex="0" aria-label="Пиксельная карта. Перетаскивайте для перемещения, используйте плюс и минус для масштаба. Места доступны в меню слева."></canvas>
+   <div id="loading" class="loading"><span class="loader-pixel"></span>Собираем маленький мир…</div>
+   <div class="map-top"><span class="map-badge"><span class="live-dot"></span>СВОБОДНАЯ ПРОГУЛКА</span><button id="reset" class="map-reset" aria-label="Вернуть карту в исходное положение"><span>⌖</span><span>Вся карта</span></button></div>
+   <div class="compass" aria-label="Север справа сверху"><span>С</span><svg width="35" height="40" viewBox="0 0 35 40"><path d="M11 29L27 6L23 25L17 21Z" fill="#274a3d"/><path d="M11 29L17 21L23 25Z" fill="#f6f3df"/></svg></div>
+   <div class="map-tooltip" id="mapTooltip" hidden></div>
+   <div class="location-card" id="locationCard"><button id="closeCard" aria-label="Закрыть карточку места">×</button><span class="card-tag" id="cardTag">ТОЧКА СБОРА</span><h2 id="cardTitle">НГТУ НЭТИ</h2><p id="cardDescription">Первый корпус · проспект Карла Маркса, 20 к1</p><div class="card-footer"><span class="card-dot"></span><span id="cardHint">Отсюда начинается прогулка</span></div></div>
+   <div class="map-bottom"><span class="map-hint"><span>↔</span> Перетаскивай карту · нажимай на места</span><div class="zoom-controls"><button id="zoomOut" aria-label="Уменьшить масштаб">−</button><output id="zoomLevel">100%</output><button id="zoomIn" aria-label="Увеличить масштаб">+</button></div></div>
+   <button class="fullscreen" id="fullscreen" aria-label="Развернуть карту на весь экран"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7V2h5m6 0h5v5m0 6v5h-5M7 18H2v-5"/></svg></button>
+  </div>
+ </section>
+ <footer><span><i class="footer-pixel"></i>МЕСТО ДЛЯ БУДУЩЕЙ ИСТОРИИ</span><span class="footer-right">Пиксельная схема района <span>·</span> <button id="sources">О карте и источниках ↗</button></span></footer>
+</main>
+<dialog id="about"><form method="dialog"><button class="dialog-close" aria-label="Закрыть">×</button></form><div class="eyebrow">REKORD / КАРТА 01</div><h2>Маленький мир<br>вокруг НГТУ.</h2><p>Основа для будущей презентации: три места и четыре простых персонажа. Выбирай место в меню или на карте — компания отправится к нему по пешеходным дорожкам.</p><p>Улицы и контуры зданий взяты из OpenStreetMap и стилизованы. Карта повёрнута, чтобы Геодезическая читалась горизонтально. Расстояния и внешний вид упрощены; это творческая схема, не навигатор. Этаж −1 «Молочая» показан условно.</p><h3>Источники</h3><a href="https://www.openstreetmap.org/#map=18/54.9887/82.9053" target="_blank" rel="noopener">© Участники OpenStreetMap · ODbL ↗</a><a href="https://en.nstu.ru/upload/medialibrary/acc/accfb1662a37dfcd4336aeb09ecc5902.pdf" target="_blank" rel="noopener">Карта кампуса НГТУ ↗</a><a href="https://yandex.com/maps/org/burger_king/1373417535/" target="_blank" rel="noopener">Burger King · Яндекс Карты ↗</a><a href="https://yandex.kz/maps/ru/org/molochay/154149459081/?lang=ru" target="_blank" rel="noopener">Молочай · Яндекс Карты ↗</a><p class="dialog-footnote">Пробел — пауза · + / − — масштаб · стрелки — перемещение · Esc — закрыть карточку</p></dialog>
+<script src="app.js" defer></script>
+</body></html>
