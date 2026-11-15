@@ -10,6 +10,8 @@ const info={
 };
 let data,ground,scenery,markers=[],people=[],trees=[],zoom=1,pan={x:0,y:0},view={w:1,h:1,scale:1,x:0,y:0};
 let selected='campus',personSelected=-1,showRoute=true,walking=false,started=false,arrived=false,lastTime=0,time=0,drag=null,dragged=false,hover=null;
+const scenes=[null,'campus','burger','tea'];
+let sceneIndex=0,cameraTween=null;
 let route=[],routeLengths=[],routeTotal=0,progress=0,journeyFrom='campus';
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let seed=98234;
@@ -105,46 +107,53 @@ function select(id){if(!data||!info[id])return;if(selected!==id){
  selected=id;walking=false;started=false;arrived=false;setRoute(routeFrom(journeyFrom,id));
  if(route.length<2&&id==='campus'){journeyFrom='campus';placePeople();}
  }
- $$('.place').forEach(b=>{b.classList.toggle('active',b.dataset.place===id);b.setAttribute('aria-pressed',b.dataset.place===id?'true':'false');});showCard(id);$('#walkStatus').textContent=id==='campus'?'Компания собирается у первого корпуса':'Маршрут готов · '+info[id].title;buttonState();render();}
-function toggleWalk(){if(!data)return;if(selected==='campus'&&(routeTotal<1||arrived)){journeyFrom='campus';select('burger');}
+ $$('.place').forEach(b=>{b.classList.toggle('active',b.dataset.place===id);b.setAttribute('aria-pressed',b.dataset.place===id?'true':'false');});showCard(id);updateSceneUi(scenes.indexOf(id));$('#walkStatus').textContent=id==='campus'?'Компания собирается у первого корпуса':'Маршрут готов · '+info[id].title;buttonState();render();}
+function toggleWalk(){if(!data)return;if(selected==='campus'&&(routeTotal<1||arrived)){journeyFrom='campus';goScene(2);}
  if(arrived){journeyFrom='campus';placePeople();setRoute(routeFrom('campus',selected));arrived=false;started=false;}
  walking=!walking;started=true;buttonState();$('#walkStatus').textContent=walking?'В пути · '+info[selected].title:'Прогулка на паузе';}
-function tick(now){const wasWalking=walking;const dt=Math.min((now-lastTime)/1000||0,.05);lastTime=now;time+=dt;
+function tick(now){const wasWalking=walking,wasMoving=Boolean(cameraTween);const dt=Math.min((now-lastTime)/1000||0,.05);lastTime=now;time+=dt;
  if(walking&&routeTotal>0){progress+=dt*43;people.forEach((p,i)=>{const pos=positionAt(progress-i*16);const perpendicular=Math.hypot(pos.dx,pos.dy)||1;const off=(i%2?1:-1)*4;p.x=pos.x-pos.dy/perpendicular*off;p.y=pos.y+pos.dx/perpendicular*off;p.facing=pos.dx<-.1?-1:1;p.step=reduced?0:time*7+i;});if(progress>=routeTotal+people.length*16){walking=false;arrived=true;people.forEach((p,i)=>{const end=route.at(-1);p.x=end[0]+(i-1.5)*16;p.y=end[1]+(i%2)*9;});buttonState();$('#walkStatus').textContent='Пришли! · '+info[selected].title;$('#cardHint').textContent=selected==='tea'?'Компания у «Амстердама» · Молочай на −1 этаже':'Компания на месте';}}
- if(wasWalking)render();requestAnimationFrame(tick);}
-function changeZoom(delta){zoom=Math.min(2.5,Math.max(.7,Math.round((zoom+delta)*10)/10));updateView();render();}
-function reset(){zoom=1;pan={x:0,y:0};updateView();render();}
+ if(cameraTween){const t=cameraTween;t.elapsed+=dt;const p=Math.min(1,t.elapsed/.65),e=1-Math.pow(1-p,3);zoom=t.z0+(t.z1-t.z0)*e;pan.x=t.x0+(t.x1-t.x0)*e;pan.y=t.y0+(t.y1-t.y0)*e;updateView();if(p===1)cameraTween=null;}
+ if(wasWalking||wasMoving)render();requestAnimationFrame(tick);}
+function changeZoom(delta){cameraTween=null;zoom=Math.min(2.5,Math.max(.7,Math.round((zoom+delta)*10)/10));updateView();render();}
+function reset(){goScene(0);}
+function updateSceneUi(n){sceneIndex=n;$$('.scene-button').forEach(b=>{const active=Number(b.dataset.scene)===n;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});$('#sceneCounter').value=String(n+1).padStart(2,'0');$('#sceneName').textContent=n===0?'Карта кампуса':info[scenes[n]].title;$('#previousScene').disabled=n===0;$('#nextScene').disabled=n===scenes.length-1;}
+function goScene(n,animate=true){n=Math.max(0,Math.min(scenes.length-1,n));const id=scenes[n];if(id)select(id);else $('#locationCard').hidden=true;updateSceneUi(n);const focus=n===0?[660,470]:n===1?[912,530]:n===2?[807,390]:[366,420];const z=n===0?1:1.5,base=Math.max(view.w/W,view.h/H),x=(660-focus[0])*base*z,y=(470-focus[1])*base*z;if(animate&&!reduced)cameraTween={z0:zoom,z1:z,x0:pan.x,x1:x,y0:pan.y,y1:y,elapsed:0};else{cameraTween=null;zoom=z;pan={x,y};updateView();render();}}
+
 function clampPan(){pan.x=Math.max(-view.w*.65,Math.min(view.w*.65,pan.x));pan.y=Math.max(-view.h*.7,Math.min(view.h*.7,pan.y));}
 function worldAt(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left-view.x)/view.scale,y:(e.clientY-r.top-view.y)/view.scale};}
 function hit(e){const p=worldAt(e);for(const m of markers){const [x,y]=[m.x,m.y];if(Math.abs(p.x-x)<85&&p.y>y-65&&p.y<y+15)return {type:'place',id:m.id};}
  for(let i=0;i<people.length;i++)if(Math.abs(p.x-people[i].x)<14&&p.y>people[i].y-30&&p.y<people[i].y+8)return {type:'person',id:i};
  for(const b of data?.buildings||[]){const id=b.id==='36136717'?'campus':b.id==='205519637'?'burger':b.id==='453655001'?'tea':null;if(id&&pointIn(p.x,p.y+18,b.p))return {type:'place',id};}return null;}
 const pointers=new Map();let pinchDistance=null;
-canvas.addEventListener('pointerdown',e=>{if(!data)return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,panX:pan.x,panY:pan.y};dragged=false;});
+canvas.addEventListener('pointerdown',e=>{if(!data)return;cameraTween=null;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,panX:pan.x,panY:pan.y};dragged=false;});
 canvas.addEventListener('pointermove',e=>{
  if(pointers.has(e.pointerId)){pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2){const ps=[...pointers.values()],d=Math.hypot(ps[1].x-ps[0].x,ps[1].y-ps[0].y);if(pinchDistance){zoom=Math.min(2.5,Math.max(.7,zoom*d/pinchDistance));updateView();}pinchDistance=d;dragged=true;render();return;}
  if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)dragged=true;pan.x=drag.panX+dx;pan.y=drag.panY+dy;clampPan();updateView();}}
  else{const h=hit(e);hover=h?.type==='place'?h.id:null;canvas.style.cursor=h?'pointer':'grab';}
  render();
 });
-canvas.addEventListener('pointerup',e=>{const h=!dragged?hit(e):null;pointers.delete(e.pointerId);pinchDistance=null;drag=null;if(h?.type==='place')select(h.id);if(h?.type==='person')selectPerson(h.id);});
+canvas.addEventListener('pointerup',e=>{const h=!dragged?hit(e):null;pointers.delete(e.pointerId);pinchDistance=null;drag=null;if(h?.type==='place')goScene(scenes.indexOf(h.id));if(h?.type==='person')selectPerson(h.id);});
 canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);drag=null;pinchDistance=null;});
 canvas.addEventListener('pointerleave',()=>{hover=null;});
 canvas.addEventListener('wheel',e=>{e.preventDefault();changeZoom(e.deltaY<0?.1:-.1);},{passive:false});
 canvas.addEventListener('dblclick',e=>{if(!hit(e))changeZoom(.2);});
 function selectPerson(i){personSelected=personSelected===i?-1:i;$$('.walker').forEach((b,n)=>{b.classList.toggle('selected',n===personSelected);b.setAttribute('aria-pressed',n===personSelected?'true':'false');});render();}
-$$('.place').forEach(b=>b.addEventListener('click',()=>select(b.dataset.place)));
+$$('.scene-button').forEach(b=>b.addEventListener('click',()=>goScene(Number(b.dataset.scene))));
+$('#previousScene').addEventListener('click',()=>goScene(sceneIndex-1));$('#nextScene').addEventListener('click',()=>goScene(sceneIndex+1));
+function cleanView(){document.body.classList.toggle('clean-view');}
+$('#cleanView').addEventListener('click',cleanView);$('#restore').addEventListener('click',cleanView);
 $$('.walker').forEach(b=>b.addEventListener('click',()=>selectPerson(Number(b.dataset.person))));
 $('#walkButton').addEventListener('click',toggleWalk);
 $('#routeToggle').addEventListener('click',()=>{showRoute=!showRoute;$('#routeToggle').classList.toggle('on',showRoute);$('#routeToggle').setAttribute('aria-checked',String(showRoute));render();});
 $('#zoomIn').addEventListener('click',()=>changeZoom(.2));$('#zoomOut').addEventListener('click',()=>changeZoom(-.2));$('#reset').addEventListener('click',reset);
 $('#closeCard').addEventListener('click',()=>{$('#locationCard').hidden=true;});
-for(const id of ['info','sources'])$('#'+id).addEventListener('click',()=>$('#about').showModal());
+for(const id of ['info'])$('#'+id).addEventListener('click',()=>$('#about').showModal());
 $('#about').addEventListener('click',e=>{if(e.target===$('#about')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 $('#fullscreen').addEventListener('click',async()=>{const area=$('#mapArea');try{if(document.fullscreenElement)await document.exitFullscreen();else if(area.requestFullscreen)await area.requestFullscreen();else area.classList.toggle('expanded');}catch{area.classList.toggle('expanded');}resize();});
 document.addEventListener('fullscreenchange',resize);
-canvas.addEventListener('keydown',e=>{if([' ','+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Escape','0'].includes(e.key))e.preventDefault();if(e.key===' ')toggleWalk();if(e.key==='+'||e.key==='=')changeZoom(.2);if(e.key==='-')changeZoom(-.2);if(e.key==='0')reset();if(e.key==='ArrowLeft')pan.x+=40;if(e.key==='ArrowRight')pan.x-=40;if(e.key==='ArrowUp')pan.y+=40;if(e.key==='ArrowDown')pan.y-=40;if(e.key==='Escape'){$('#mapArea').classList.remove('expanded');$('#locationCard').hidden=true;}clampPan();updateView();render();});
+document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||$('#about').open||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;const key=e.key.toLowerCase();if([' ','arrowleft','arrowright','+','=','-','f','h','?','0','1','2','3','4'].includes(key))e.preventDefault();if(key==='arrowleft')goScene(sceneIndex-1);if(key==='arrowright')goScene(sceneIndex+1);if(['1','2','3','4'].includes(key))goScene(Number(key)-1);if(key==='0')goScene(0);if(key===' ')toggleWalk();if(key==='+'||key==='=')changeZoom(.2);if(key==='-')changeZoom(-.2);if(key==='f')$('#fullscreen').click();if(key==='h')cleanView();if(key==='?')$('#about').showModal();if(key==='escape'){document.body.classList.remove('clean-view');$('#mapArea').classList.remove('expanded');$('#locationCard').hidden=true;}});
 new ResizeObserver(resize).observe($('#mapArea'));
-async function init(){try{const response=await fetch('map-data.json');if(!response.ok)throw Error('map data');data=await response.json();await document.fonts.ready;makeWorld();placePeople();setRoute(data.routes.campus);select('campus');$$('.walker canvas').forEach((cv,i)=>{const c=cv.getContext('2d');c.imageSmoothingEnabled=false;sprite(c,12,29,colors[i],0,1);});$('#loading').hidden=true;resize();requestAnimationFrame(tick);}catch(e){console.error(e);$('#loading').textContent='Не удалось загрузить карту. Обновить страницу ↻';$('#loading').style.cursor='pointer';$('#loading').onclick=()=>location.reload();$('#walkButton').disabled=true;}}
+async function init(){try{const embedded=$('#embeddedMapData');if(embedded){data=JSON.parse(embedded.textContent);}else{const response=await fetch('map-data.json');if(!response.ok)throw Error('map data');data=await response.json();}await document.fonts.ready;makeWorld();placePeople();setRoute(data.routes.campus);select('campus');$$('.walker canvas').forEach((cv,i)=>{const c=cv.getContext('2d');c.imageSmoothingEnabled=false;sprite(c,12,29,colors[i],0,1);});$('#loading').hidden=true;resize();goScene(0,false);requestAnimationFrame(tick);}catch(e){console.error(e);$('#loading').textContent='Не удалось загрузить карту. Обновить страницу ↻';$('#loading').style.cursor='pointer';$('#loading').onclick=()=>location.reload();$('#walkButton').disabled=true;}}
 init();
 })();
