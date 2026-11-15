@@ -2,19 +2,23 @@
 
 Полноэкранная HTML-презентация 16:9 на основе интерактивной пиксельной карты района НГТУ НЭТИ в Новосибирске. Четыре ракурса одной карты: общий вид, НГТУ, Burger King и Молочай. Пока без сюжетного наполнения.
 
+Это обычный HTML/CSS/JavaScript без Sites, фреймворков, внешних библиотек и привязки к хостингу.
+
 ## Запуск
 
-**Один файл без сервера:** скачать `dist/rekord-presentation.html` и открыть двойным щелчком в современном браузере. Карта, CSS, JS и шрифты встроены, интернет не требуется.
+**Готовый архив:** скачать `REKORD-presentation.zip`, распаковать и открыть `REKORD.html`.
+
+**Один файл без сервера:** скачать `REKORD.html` и открыть двойным щелчком в современном браузере. Карта, CSS, JS и шрифты встроены, интернет не требуется.
 
 **По HTTP:** обслуживать каталог `dist` любым HTTP-сервером, например:
 
 ```sh
-python -m http.server 8080 --directory dist
+python -m http.server 8080
 ```
 
-Открыть `http://localhost:8080`. Модульный `dist/index.html` использует отдельный JSON и требует HTTP. Автономный `dist/rekord-presentation.html` работает и через HTTP, и через `file://`.
+Открыть `http://localhost:8080/REKORD.html`. Модульный `dist/index.html` использует отдельный JSON и требует HTTP. Автономный `REKORD.html` работает и через HTTP, и через `file://`.
 
-После изменения исходников пересобрать автономную копию: `python scripts/build-standalone.py`.
+После изменения исходников пересобрать автономную копию и ZIP: `python scripts/build-standalone.py`.
 
 ## Управление
 
@@ -37,4 +41,4 @@ python -m http.server 8080 --directory dist
 
 ## Файлы
 
-`dist/index.html` — интерфейс; `dist/style.css` — стили; `dist/app.js` — рисование, камера и взаимодействия; `dist/map-data.json` — геометрия. `.openai/hosting.json` — привязка частного сайта.
+`dist/index.html` — интерфейс; `dist/style.css` — стили; `dist/app.js` — рисование, камера и взаимодействия; `dist/map-data.json` — геометрия. `REKORD.html` — автономная презентация; `REKORD-presentation.zip` — архив для передачи. `scripts/build-standalone.py` — сборка без зависимостей.
